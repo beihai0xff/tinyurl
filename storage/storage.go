@@ -31,7 +31,7 @@ type Storage interface {
 	// Batch(func(tx *bolt.Tx) error)
 
 	// Methods to manage a Bucket
-	BucketCreate(bucket []byte) error
+	BucketCreate(bucket []byte) (*bolt.Bucket, error)
 	BucketDelete(bucket []byte) error
 }
 
@@ -56,7 +56,7 @@ type Config struct {
 	// BatchLimit is the maximum puts before flushing the BatchTx.
 	// 指定每个批量读写事务能包含的最多操作个数，当超过这个阈值后，当前批量读写事务会自动提交
 	BatchLimit int
-	MmapSize   int64
+	MmapSize   int
 }
 
 func DefaultConfig() *Config {

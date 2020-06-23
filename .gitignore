@@ -7,6 +7,7 @@
 *.sh
 *.sum
 *.database
+*.db
 
 # Test binary, build with `go test -c`
 *.test
@@ -15,7 +16,6 @@
 *.out
 
 /log
-/.idea
 /build
 /static
 /docs

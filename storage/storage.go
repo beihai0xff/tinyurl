@@ -1,9 +1,10 @@
 package storage
 
 import (
-	"encoding/binary"
 	"fmt"
+	"github.com/wingsxdu/tinyurl/util"
 	"log"
+	"os"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -26,16 +27,19 @@ type Storage interface {
 	View(bucket, key []byte) ([]byte, error)
 	// Create or update a key
 	Update(bucket, key, value []byte) error
-	// delete a key from bucket
+	// Delete a key from bucket
 	Delete(bucket, key []byte) error
+	// Generate a index for the url and store it
+	Index(value []byte) (uint64, error)
 	//
 	// Batch(func(tx *bolt.Tx) error)
 
 	// Methods to manage a Bucket
-	BucketCreate(bucket []byte) (*bolt.Bucket, error)
-	BucketDelete(bucket []byte) error
+	CreateBucket(bucket []byte) error
+	DeleteBucket(bucket []byte) error
 }
 
+// TODO(beihai): BatchTx
 type storage struct {
 	db *bolt.DB
 
@@ -76,6 +80,7 @@ func New(c *Config) Storage {
 }
 
 func newStorage(c *Config) Storage {
+	err := os.Mkdir("./tinyUrl/", 0600)
 	// Open the ./tinyUrl/storage.db data file in your current directory.
 	// It will be created if it doesn't exist.
 	db, err := bolt.Open(c.Path, 0600, &bolt.Options{Timeout: 3 * time.Second, InitialMmapSize: c.MmapSize})
@@ -93,32 +98,29 @@ func newStorage(c *Config) Storage {
 	}
 	// 启动一个单独的协程，其中会定时提交当前的读写事务，并开启新的读写事务
 	// go s.run()
-	b, err := s.createBucket([]byte("index"))
-	if err != nil {
-		log.Panicln(err)
-	}
-	// start index
-	err = b.SetSequence(123456)
-	if err != nil {
-		log.Panicln(err)
+	exist, err := s.tryCreateBucket([]byte("index"), true)
+	if exist {
+
 	}
 	return s
 }
 
+// Get a k/v pairs in Read-Only transactions.
 func (s *storage) View(bucket, key []byte) ([]byte, error) {
 	var v []byte
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		if b == nil {
-			return errorBucketNotFound
+			return ErrBucketNotFound
 		}
 		v = b.Get(key)
 		return nil
 	})
-	// 不存在的键值对返回 nil
+	// if the key not exist will return nil
 	return v, err
 }
 
+// Update a key from given bucket.
 func (s *storage) Update(bucket, key, value []byte) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(bucket)
@@ -129,14 +131,25 @@ func (s *storage) Update(bucket, key, value []byte) error {
 	})
 }
 
-// Index() will Generate a index for the url.
+// Delete a key from given bucket.
+func (s *storage) Delete(bucket, key []byte) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucket)
+		if b == nil {
+			return ErrBucketNotFound
+		}
+		return b.Delete(key)
+	})
+}
+
+// Index() will Generate a index for the given url(value) and store it.
 func (s *storage) Index(value []byte) (uint64, error) {
 	var index uint64
 	return index, s.db.Update(func(tx *bolt.Tx) error {
 		// This should be created when the DB is first opened.
 		b := tx.Bucket([]byte("index"))
 		if b == nil {
-			return errorBucketNotFound
+			return ErrBucketNotFound
 		}
 
 		// Generate index for the url.
@@ -145,61 +158,53 @@ func (s *storage) Index(value []byte) (uint64, error) {
 		index, _ = b.NextSequence()
 
 		// Persist bytes to url bucket.
-		return b.Put(utob(index), value)
+		return b.Put(util.Utob(index), value)
 	})
 }
 
-func utob(v uint64) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, v)
-	return b
+// return a bucket
+func (s *storage) CreateBucket(bucket []byte) error {
+	_, err := s.tryCreateBucket(bucket, false)
+	return err
 }
 
-func (s *storage) Delete(bucket, key []byte) error {
-	return s.db.View(func(tx *bolt.Tx) error {
+// tryCreateBucket() will create a Bucket if it not exists
+// the field exist tell the caller whether the Bucket already exists.
+func (s *storage) tryCreateBucket(bucket []byte, start bool) (bool, error) {
+	var exist bool
+	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
 		if b == nil {
-			return errorBucketNotFound
-		}
-		return b.Delete(key)
-	})
-}
-
-func (s *storage) BucketCreate(bucket []byte) (*bolt.Bucket, error) {
-	return s.createBucket(bucket)
-}
-
-func (s *storage) createBucket(bucket []byte) (*bolt.Bucket, error) {
-	var (
-		b   *bolt.Bucket
-		err error
-	)
-	err = s.db.Update(func(tx *bolt.Tx) error {
-		b, err = tx.CreateBucketIfNotExists(bucket)
-		if err != nil {
-			return fmt.Errorf("create bucket %s failed: %s", bucket, err)
+			// Bucket not exist, create a new Bucket
+			exist = false
+			b, err := tx.CreateBucketIfNotExists(bucket)
+			if err != nil {
+				return fmt.Errorf("create bucket %s failed: %s", bucket, err)
+			}
+			if start {
+				err = b.SetSequence(123456)
+				if err != nil {
+					log.Panicln(err)
+				}
+			}
+		} else {
+			exist = true // Bucket exists
 		}
 		return nil
 	})
-	return b, err
+	return exist, err
 }
 
-func (s *storage) BucketDelete(bucket []byte) error {
-	return s.db.Update(func(tx *bolt.Tx) error {
+// Delete the given bucket
+func (s *storage) DeleteBucket(bucket []byte) error {
+	err := s.db.Update(func(tx *bolt.Tx) error {
 		return tx.DeleteBucket(bucket)
 	})
-}
+	if err != nil {
+		if err == ErrBucketNotFound {
+			err = nil
+		}
+	}
 
-// func (s *storage) run() {
-// 	defer close(s.donec)
-// 	// 定时器
-// 	t := time.NewTimer(s.batchInterval)
-// 	defer t.Stop()
-// 	for {
-// 		select {
-// 		case <-t.C:
-// 		case <-s.stopc:
-// 		}
-// 		t.Reset(s.batchInterval)
-// 	}
-// }
+	return err
+}

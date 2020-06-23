@@ -1,7 +1,7 @@
 package storage
 
-import "errors"
+import bolt "go.etcd.io/bbolt"
 
 var (
-	errorBucketNotFound = errors.New("BucketNotFound")
+	ErrBucketNotFound = bolt.ErrBucketNotFound
 )

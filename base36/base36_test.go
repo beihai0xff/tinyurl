@@ -1,4 +1,4 @@
-package base
+package base36
 
 import (
 	"testing"

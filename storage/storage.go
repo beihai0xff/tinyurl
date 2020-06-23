@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"time"
@@ -43,12 +44,14 @@ type storage struct {
 	// 指定了一次读写事务中最大的操作数，当超过该阈值时，当前的读写事务会自动提交
 	batchLimit int
 
+	buckets map[*bolt.Bucket]time.Duration
+
 	stopc chan struct{}
 	donec chan struct{}
 }
 
 type Config struct {
-	// Path is the file path to the backend file.
+	// Path is the file path to the storage file.
 	Path string
 	// BatchInterval is the maximum time before flushing the BatchTx.
 	// 提交两次批量事务的最大时间差，默认 100ms
@@ -77,7 +80,7 @@ func newStorage(c *Config) Storage {
 	// It will be created if it doesn't exist.
 	db, err := bolt.Open(c.Path, 0600, &bolt.Options{Timeout: 3 * time.Second, InitialMmapSize: c.MmapSize})
 	if err != nil {
-		log.Fatal(err)
+		log.Panicln(err)
 	}
 	s := &storage{
 		db: db,
@@ -90,6 +93,15 @@ func newStorage(c *Config) Storage {
 	}
 	// 启动一个单独的协程，其中会定时提交当前的读写事务，并开启新的读写事务
 	// go s.run()
+	b, err := s.createBucket([]byte("index"))
+	if err != nil {
+		log.Panicln(err)
+	}
+	// start index
+	err = b.SetSequence(123456)
+	if err != nil {
+		log.Panicln(err)
+	}
 	return s
 }
 
@@ -117,6 +129,32 @@ func (s *storage) Update(bucket, key, value []byte) error {
 	})
 }
 
+// Index() will Generate a index for the url.
+func (s *storage) Index(value []byte) (uint64, error) {
+	var index uint64
+	return index, s.db.Update(func(tx *bolt.Tx) error {
+		// This should be created when the DB is first opened.
+		b := tx.Bucket([]byte("index"))
+		if b == nil {
+			return errorBucketNotFound
+		}
+
+		// Generate index for the url.
+		// This returns an error only if the Tx is closed or not writeable.
+		// That can't happen in an Update() call so I ignore the error check.
+		index, _ = b.NextSequence()
+
+		// Persist bytes to url bucket.
+		return b.Put(utob(index), value)
+	})
+}
+
+func utob(v uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, v)
+	return b
+}
+
 func (s *storage) Delete(bucket, key []byte) error {
 	return s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
@@ -137,7 +175,7 @@ func (s *storage) createBucket(bucket []byte) (*bolt.Bucket, error) {
 		err error
 	)
 	err = s.db.Update(func(tx *bolt.Tx) error {
-		b, err = tx.CreateBucket(bucket)
+		b, err = tx.CreateBucketIfNotExists(bucket)
 		if err != nil {
 			return fmt.Errorf("create bucket %s failed: %s", bucket, err)
 		}

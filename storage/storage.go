@@ -19,6 +19,8 @@ const (
 
 	defaultBatchLimit    = 100
 	defaultBatchInterval = 500 * time.Millisecond
+
+	StartAt = 123456
 )
 
 type Storage interface {
@@ -26,6 +28,7 @@ type Storage interface {
 	// Read-Only transactions
 	View(bucket, key []byte) ([]byte, error)
 	// Create or update a key
+	// The caller should make sure the key exists when update a key
 	Update(bucket, key, value []byte) error
 	// Delete a key from bucket
 	Delete(bucket, key []byte) error
@@ -182,7 +185,7 @@ func (s *storage) tryCreateBucket(bucket []byte, start bool) (bool, error) {
 				return fmt.Errorf("create bucket %s failed: %s", bucket, err)
 			}
 			if start {
-				err = b.SetSequence(123456)
+				err = b.SetSequence(StartAt)
 				if err != nil {
 					log.Panicln(err)
 				}

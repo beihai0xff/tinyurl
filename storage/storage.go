@@ -68,7 +68,7 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		Path:          "./tinyUrl/storage.db",
+		Path:          "./database/storage.db",
 		BatchInterval: defaultBatchInterval,
 		BatchLimit:    defaultBatchLimit,
 		MmapSize:      defaultInitialMmapSize,
@@ -80,7 +80,7 @@ func New(c *Config) Storage {
 }
 
 func newStorage(c *Config) Storage {
-	err := os.Mkdir("./tinyUrl/", 0600)
+	err := os.Mkdir("./database/", 0600)
 	// Open the ./tinyUrl/storage.db data file in your current directory.
 	// It will be created if it doesn't exist.
 	db, err := bolt.Open(c.Path, 0600, &bolt.Options{Timeout: 3 * time.Second, InitialMmapSize: c.MmapSize})
@@ -105,7 +105,7 @@ func newStorage(c *Config) Storage {
 	return s
 }
 
-// Get a k/v pairs in Read-Only transactions.
+// View a k/v pairs in Read-Only transactions.
 func (s *storage) View(bucket, key []byte) ([]byte, error) {
 	var v []byte
 	err := s.db.View(func(tx *bolt.Tx) error {

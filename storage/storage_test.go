@@ -15,10 +15,10 @@ var s Storage
 var s1 *storage
 
 func init() {
-	os.RemoveAll("./tinyUrl/")
+	os.RemoveAll("./database/")
 	s = New(DefaultConfig())
 
-	db, err := bolt.Open("./tinyUrl/test.db", 0600, &bolt.Options{Timeout: 3 * time.Second, InitialMmapSize: defaultInitialMmapSize})
+	db, err := bolt.Open("./database/test.db", 0600, &bolt.Options{Timeout: 3 * time.Second, InitialMmapSize: defaultInitialMmapSize})
 	if err != nil {
 		log.Panicln(err)
 	}

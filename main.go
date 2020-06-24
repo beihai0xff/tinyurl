@@ -60,9 +60,7 @@ func getUrl(c echo.Context) error {
 	url, err := server.GetTinyUrl(tinyUrl)
 	if err != nil {
 		c.Error(err)
-	}
-	// if the tinyUrl doesn't exist
-	if url == nil {
+	} else if url == nil { // if the tinyUrl doesn't exist
 		return c.String(http.StatusAccepted, "The tinyUrl doesn't exist")
 	}
 	return c.Redirect(http.StatusTemporaryRedirect, string(url))
@@ -75,7 +73,6 @@ func postUrl(c echo.Context) error {
 	if err != nil {
 		c.Error(err)
 	}
-	fmt.Println(c.Request().Host)
 	tinyUrl := c.Request().Host + "/t/" + index
 	return c.String(http.StatusOK, tinyUrl)
 }

@@ -1,12 +1,18 @@
 package server
 
 import (
+	"errors"
+
 	"github.com/wingsxdu/tinyurl/base36"
 	"github.com/wingsxdu/tinyurl/storage"
 	"github.com/wingsxdu/tinyurl/util"
 )
 
-var s storage.Storage
+var (
+	ErrTinyUrlTooSmall = errors.New("the tinyUrl is too small")
+	ErrTinyUrlNotExist = errors.New("the tinyUrl is not exist")
+	s                  storage.Storage
+)
 
 // Don't use init()
 func InitServer() {
@@ -29,6 +35,15 @@ func PostTinyUrl(url []byte) (string, error) {
 
 func PutTinyUrl(tinyUrl, newUrl string) error {
 	index := base36.Decode(tinyUrl)
+	if index <= storage.StartAt {
+		return ErrTinyUrlTooSmall
+	}
+	oldUrl, err := s.View([]byte("index"), util.Utob(index))
+	if err != nil {
+		return err
+	} else if oldUrl == nil {
+		return ErrTinyUrlNotExist
+	}
 	return s.Update([]byte("index"), util.Utob(index), []byte(newUrl))
 }
 

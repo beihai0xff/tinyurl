@@ -76,7 +76,7 @@ func postUrl(c echo.Context) error {
 		c.Error(err)
 	}
 	fmt.Println(c.Request().Host)
-	tinyUrl := c.Request().Host + "/" + index
+	tinyUrl := c.Request().Host + "/t/" + index
 	return c.String(http.StatusOK, tinyUrl)
 }
 

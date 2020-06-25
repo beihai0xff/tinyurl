@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server.InitServer()
+	New()
 	/*	go func() {
 		f2, err := os.Create("./log/httpWarn.log")
 		if err != nil {
@@ -52,6 +52,10 @@ func main() {
 
 	fmt.Printf("PID is：%d", os.Getpid())
 	e.Logger.Warn(e.Start(":80"))
+}
+
+func New() {
+	server.InitServer()
 }
 
 // http://localhost/t/2n9d

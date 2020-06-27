@@ -42,9 +42,9 @@ func TestPostTinyUrl(t *testing.T) {
 	for got < "2n30" {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			got, err = PostTinyUrl(tt.url)
+			got, err = CreateTinyUrl(tt.url)
 			if err != nil {
-				t.Errorf("PostTinyUrl() error = %v", err)
+				t.Errorf("CreateTinyUrl() error = %v", err)
 				return
 			}
 		})
@@ -66,8 +66,8 @@ func TestPutTinyUrl(t *testing.T) {
 	TestPostTinyUrl(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := PutTinyUrl(tt.tinyUrl, tt.newUrl); err != nil && err != tt.wantErr {
-				t.Errorf("PutTinyUrl() error = %v", err)
+			if err := UpdateTinyUrl(tt.tinyUrl, tt.newUrl); err != nil && err != tt.wantErr {
+				t.Errorf("UpdateTinyUrl() error = %v", err)
 			}
 		})
 	}

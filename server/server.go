@@ -25,7 +25,7 @@ func GetTinyUrl(tinyUrl string) ([]byte, error) {
 	return s.View([]byte("index"), util.Utob(index))
 }
 
-func PostTinyUrl(url []byte) (string, error) {
+func CreateTinyUrl(url []byte) (string, error) {
 	index, err := s.Index(url)
 	if err != nil {
 		return "", err
@@ -33,7 +33,7 @@ func PostTinyUrl(url []byte) (string, error) {
 	return base36.Encode(index), nil
 }
 
-func PutTinyUrl(tinyUrl, newUrl string) error {
+func UpdateTinyUrl(tinyUrl, newUrl string) error {
 	index := base36.Decode(tinyUrl)
 	if index <= storage.StartAt {
 		return ErrTinyUrlTooSmall

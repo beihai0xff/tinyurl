@@ -1,7 +1,11 @@
 package storage
 
-import bolt "go.etcd.io/bbolt"
+import (
+	"errors"
+	bolt "go.etcd.io/bbolt"
+)
 
 var (
-	ErrBucketNotFound = bolt.ErrBucketNotFound
+	ErrBucketNotFound  = bolt.ErrBucketNotFound
+	ErrKeyAlreadyExist = errors.New("the key already exist")
 )

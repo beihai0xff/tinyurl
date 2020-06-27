@@ -28,7 +28,10 @@ type Storage interface {
 	// Read-Only transactions
 	View(bucket, key []byte) ([]byte, error)
 	// Create or update a key
-	// The caller should make sure the key exists when update a key
+	// If the key already exist it will return
+	Create(bucket, key, value []byte) error
+	// Create or update a key
+	// If the key not exist it will Create the key
 	Update(bucket, key, value []byte) error
 	// Delete a key from bucket
 	Delete(bucket, key []byte) error
@@ -99,8 +102,6 @@ func newStorage(c *Config) Storage {
 		stopc: make(chan struct{}),
 		donec: make(chan struct{}),
 	}
-	// 启动一个单独的协程，其中会定时提交当前的读写事务，并开启新的读写事务
-	// go s.run()
 	exist, err := s.tryCreateBucket([]byte("index"), true)
 	if exist {
 
@@ -124,6 +125,20 @@ func (s *storage) View(bucket, key []byte) ([]byte, error) {
 }
 
 // Update a key from given bucket.
+func (s *storage) Create(bucket, key, value []byte) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(bucket)
+		if b == nil {
+			return ErrBucketNotFound
+		}
+		if v := b.Get(key); v != nil {
+			return ErrKeyAlreadyExist
+		}
+		return b.Put(key, value)
+	})
+}
+
+// Update or Create a key from given bucket.
 func (s *storage) Update(bucket, key, value []byte) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(bucket)

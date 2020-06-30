@@ -1,4 +1,4 @@
-package server
+package tinyurl
 
 import (
 	"reflect"
@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	InitServer()
+	New()
 }
 
 func TestGetTinyUrl(t *testing.T) {
@@ -20,13 +20,13 @@ func TestGetTinyUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetTinyUrl(tt.tinyUrl)
+			got, err := Get(tt.tinyUrl)
 			if err != nil {
-				t.Errorf("GetTinyUrl() error = %v", err)
+				t.Errorf("Get() error = %v", err)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetTinyUrl() got = %v, want %v", got, tt.want)
+				t.Errorf("Get() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -42,9 +42,9 @@ func TestPostTinyUrl(t *testing.T) {
 	for got < "2n30" {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			got, err = CreateTinyUrl(tt.url)
+			got, err = Create(tt.url)
 			if err != nil {
-				t.Errorf("CreateTinyUrl() error = %v", err)
+				t.Errorf("Create() error = %v", err)
 				return
 			}
 		})
@@ -66,8 +66,8 @@ func TestPutTinyUrl(t *testing.T) {
 	TestPostTinyUrl(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := UpdateTinyUrl(tt.tinyUrl, tt.newUrl); err != nil && err != tt.wantErr {
-				t.Errorf("UpdateTinyUrl() error = %v", err)
+			if err := Update(tt.tinyUrl, tt.newUrl); err != nil && err != tt.wantErr {
+				t.Errorf("Update() error = %v", err)
 			}
 		})
 	}
@@ -87,8 +87,8 @@ func TestDeleteTinyUrl(t *testing.T) {
 	TestPostTinyUrl(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := DeleteTinyUrl(tt.tinyUrl); err != nil {
-				t.Errorf("DeleteTinyUrl() error = %v", err)
+			if err := Delete(tt.tinyUrl); err != nil {
+				t.Errorf("Delete() error = %v", err)
 			}
 		})
 	}

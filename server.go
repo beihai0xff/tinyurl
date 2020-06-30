@@ -1,4 +1,4 @@
-package server
+package tinyurl
 
 import (
 	"errors"
@@ -15,17 +15,21 @@ var (
 )
 
 // Don't use init()
-func InitServer() {
+
+// New() will init a Storage interface
+func New() {
 	c := storage.DefaultConfig()
 	s = storage.New(c)
 }
 
-func GetTinyUrl(tinyUrl string) ([]byte, error) {
+// Get() will get a url by tinyUrl
+func Get(tinyUrl string) ([]byte, error) {
 	index := base36.Decode(tinyUrl)
 	return s.View([]byte("index"), util.Utob(index))
 }
 
-func CreateTinyUrl(url []byte) (string, error) {
+// Create() will Create a tinyUrl
+func Create(url []byte) (string, error) {
 	index, err := s.Index(url)
 	if err != nil {
 		return "", err
@@ -33,7 +37,8 @@ func CreateTinyUrl(url []byte) (string, error) {
 	return base36.Encode(index), nil
 }
 
-func UpdateTinyUrl(tinyUrl, newUrl string) error {
+// Update() will update a tinyUrl, and the tinyUrl will direct to a new url
+func Update(tinyUrl, newUrl string) error {
 	index := base36.Decode(tinyUrl)
 	if index <= storage.StartAt {
 		return ErrTinyUrlTooSmall
@@ -47,7 +52,8 @@ func UpdateTinyUrl(tinyUrl, newUrl string) error {
 	return s.Update([]byte("index"), util.Utob(index), []byte(newUrl))
 }
 
-func DeleteTinyUrl(tinyUrl string) error {
+// Update() will delete a tinyUrl from storage, and it will not be found
+func Delete(tinyUrl string) error {
 	index := base36.Decode(tinyUrl)
 	// if err != nil, the delete function is successful
 	return s.Delete([]byte("index"), util.Utob(index))

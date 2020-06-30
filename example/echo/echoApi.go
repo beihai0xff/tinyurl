@@ -1,19 +1,19 @@
-package tinyurl
+package main
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/wingsxdu/tinyurl/server"
+	"github.com/wingsxdu/tinyurl"
 	"net/http"
 )
 
 func New() {
-	server.InitServer()
+	tinyurl.New()
 }
 
 // GET http://localhost/t/2n9d
 func GetUrl(c echo.Context) error {
 	tinyUrl := c.Param("tinyUrl")
-	url, err := server.GetTinyUrl(tinyUrl)
+	url, err := tinyurl.Get(tinyUrl)
 	if err != nil {
 		c.Error(err)
 	} else if url == nil { // if the tinyUrl doesn't exist
@@ -25,7 +25,7 @@ func GetUrl(c echo.Context) error {
 // POST http://localhost/t?url=https://www.google.com/
 func PostUrl(c echo.Context) error {
 	url := c.QueryParam("url")
-	index, err := server.CreateTinyUrl([]byte(url))
+	index, err := tinyurl.Create([]byte(url))
 	if err != nil {
 		c.Error(err)
 	}
@@ -37,7 +37,7 @@ func PostUrl(c echo.Context) error {
 func PutUrl(c echo.Context) error {
 	tinyUrl := c.QueryParam("tinyurl")
 	newUrl := c.QueryParam("newurl")
-	err := server.UpdateTinyUrl(tinyUrl, newUrl)
+	err := tinyurl.Update(tinyUrl, newUrl)
 	if err != nil {
 		c.Error(err)
 	}
@@ -47,7 +47,7 @@ func PutUrl(c echo.Context) error {
 // DELETE http://localhost/t?tinyurl=2n9d
 func DeleteUrl(c echo.Context) error {
 	tinyUrl := c.QueryParam("tinyurl")
-	err := server.DeleteTinyUrl(tinyUrl)
+	err := tinyurl.Delete(tinyUrl)
 	if err != nil {
 		c.Error(err)
 	}

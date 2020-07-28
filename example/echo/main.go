@@ -45,6 +45,8 @@ func main() {
 	e.HTTPErrorHandler = customHTTPErrorHandler
 
 	e.GET("/t/:tinyUrl", GetUrl)
+	// return tinyUrl as a string, and it will not redirect
+	e.GET("/gett/:tinyUrl", Gett)
 	e.POST("/t", PostUrl)
 	e.PUT("/t", PutUrl)
 	e.DELETE("/t", DeleteUrl)

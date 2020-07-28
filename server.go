@@ -28,7 +28,7 @@ func Get(tinyUrl string) ([]byte, error) {
 	return s.View([]byte("index"), util.Utob(index))
 }
 
-// Create() will Create a tinyUrl
+// Create() will create a tinyUrl
 func Create(url []byte) (string, error) {
 	index, err := s.Index(url)
 	if err != nil {

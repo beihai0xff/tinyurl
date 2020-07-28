@@ -22,6 +22,18 @@ func GetUrl(c echo.Context) error {
 	return c.Redirect(http.StatusTemporaryRedirect, string(url))
 }
 
+// GET http://localhost/gett/2n9d
+func Gett(c echo.Context) error {
+	tinyUrl := c.Param("tinyUrl")
+	url, err := tinyurl.Get(tinyUrl)
+	if err != nil {
+		c.Error(err)
+	} else if url == nil { // if the tinyUrl doesn't exist
+		return c.String(http.StatusAccepted, "The tinyUrl doesn't exist")
+	}
+	return c.String(http.StatusOK, string(url))
+}
+
 // POST http://localhost/t?url=https://www.google.com/
 func PostUrl(c echo.Context) error {
 	url := c.QueryParam("url")

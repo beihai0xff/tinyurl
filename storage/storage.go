@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"github.com/wingsxdu/tinyurl/util"
 	"log"
@@ -70,6 +71,8 @@ type Config struct {
 	// 指定每个批量读写事务能包含的最多操作个数，当超过这个阈值后，当前批量读写事务会自动提交
 	BatchLimit int
 	MmapSize   int
+	//
+	CreateNewFile bool
 }
 
 func DefaultConfig() *Config {
@@ -81,11 +84,11 @@ func DefaultConfig() *Config {
 	}
 }
 
-func New(c *Config) Storage {
+func New(c *Config) (Storage, error) {
 	return newStorage(c)
 }
 
-func newStorage(c *Config) Storage {
+func newStorage(c *Config) (Storage, error) {
 	err := os.Mkdir("./database/", 0600)
 	// Open the ./tinyUrl/storage.db data file in your current directory.
 	// It will be created if it doesn't exist.
@@ -103,10 +106,10 @@ func newStorage(c *Config) Storage {
 		donec: make(chan struct{}),
 	}
 	exist, err := s.tryCreateBucket([]byte("index"), true)
-	if exist {
-
+	if exist && c.CreateNewFile {
+		return nil, errors.New("Bucket Already Exist")
 	}
-	return s
+	return s, nil
 }
 
 // View a k/v pairs in Read-Only transactions.

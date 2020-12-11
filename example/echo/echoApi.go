@@ -23,6 +23,7 @@ func GetUrl(c echo.Context) error {
 }
 
 // GET http://localhost/gett/2n9d
+// Gett function used to test the api
 func Gett(c echo.Context) error {
 	tinyUrl := c.Param("tinyUrl")
 	url, err := tinyurl.Get(tinyUrl)

@@ -19,7 +19,11 @@ var (
 // New() will init a Storage interface
 func New() {
 	c := storage.DefaultConfig()
-	s = storage.New(c)
+	var err error
+	s, err = storage.New(c)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Get() will get a url by tinyUrl

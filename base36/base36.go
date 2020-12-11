@@ -34,7 +34,7 @@ var (
 	}
 )
 
-// Encode encodes a number to base36.
+// Encode encodes a uint64 to base36 string.
 // the max length is 8 bytes (8 chars)
 func Encode(value uint64) string {
 	var res [8]byte
@@ -50,7 +50,7 @@ func Encode(value uint64) string {
 	return string(res[i:])
 }
 
-// Decode decodes a base36-encoded string.
+// Decode decodes a base36-encoded string to uint64.
 func Decode(s string) uint64 {
 	res := uint64(0)
 	l := len(s) - 1

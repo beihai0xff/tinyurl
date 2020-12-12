@@ -6,7 +6,10 @@ import (
 )
 
 func init() {
-	New()
+	err := New()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestGetTinyUrl(t *testing.T) {

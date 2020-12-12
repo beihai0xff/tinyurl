@@ -17,13 +17,12 @@ var (
 // Don't use init()
 
 // New() will init a Storage interface
-func New() {
+// if New() return a error, the program could not run, so we should panic
+func New() error {
 	c := storage.DefaultConfig()
 	var err error
 	s, err = storage.New(c)
-	if err != nil {
-		panic(err)
-	}
+	return err
 }
 
 // Get() will get a url by tinyUrl

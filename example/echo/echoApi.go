@@ -7,7 +7,10 @@ import (
 )
 
 func New() {
-	tinyurl.New()
+	err := tinyurl.New()
+	if err != nil {
+		panic(err)
+	}
 }
 
 // GET http://localhost/t/2n9d

@@ -6,6 +6,7 @@ import (
 )
 
 var (
-	ErrBucketNotFound  = bolt.ErrBucketNotFound
-	ErrKeyAlreadyExist = errors.New("the key already exist")
+	ErrBucketNotFound     = bolt.ErrBucketNotFound
+	ErrKeyAlreadyExist    = errors.New("the key already exist")
+	ErrBucketAlreadyExist = errors.New("the bucket already exist")
 )

@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 	"github.com/wingsxdu/tinyurl/util"
 	"log"
@@ -71,8 +70,8 @@ type Config struct {
 	// 指定每个批量读写事务能包含的最多操作个数，当超过这个阈值后，当前批量读写事务会自动提交
 	BatchLimit int
 	MmapSize   int
-	//
-	CreateNewFile bool
+	// MustBeNewBucket 用于指定创建新 Bucket 时是否必须为新的 Bucket，如果 Bucket 已经存在则会返回 err
+	MustBeNewBucket bool
 }
 
 func DefaultConfig() *Config {
@@ -94,7 +93,7 @@ func newStorage(c *Config) (Storage, error) {
 	// It will be created if it doesn't exist.
 	db, err := bolt.Open(c.Path, 0600, &bolt.Options{Timeout: 3 * time.Second, InitialMmapSize: c.MmapSize})
 	if err != nil {
-		log.Panicln(err)
+		return nil, err
 	}
 	s := &storage{
 		db: db,
@@ -106,10 +105,10 @@ func newStorage(c *Config) (Storage, error) {
 		donec: make(chan struct{}),
 	}
 	exist, err := s.tryCreateBucket([]byte("index"), true)
-	if exist && c.CreateNewFile {
-		return nil, errors.New("Bucket Already Exist")
+	if exist && c.MustBeNewBucket {
+		return nil, ErrBucketAlreadyExist
 	}
-	return s, nil
+	return s, err
 }
 
 // View a k/v pairs in Read-Only transactions.
@@ -183,24 +182,24 @@ func (s *storage) Index(value []byte) (uint64, error) {
 	})
 }
 
-// return a bucket
-func (s *storage) CreateBucket(bucket []byte) error {
-	_, err := s.tryCreateBucket(bucket, false)
+// create a bucket
+func (s *storage) CreateBucket(bucketName []byte) error {
+	_, err := s.tryCreateBucket(bucketName, false)
 	return err
 }
 
-// tryCreateBucket() will create a Bucket if it not exists
-// the field exist tell the caller whether the Bucket already exists.
-func (s *storage) tryCreateBucket(bucket []byte, start bool) (bool, error) {
+// tryCreateBucket will create a Bucket if it not exists
+// the field exist tells the caller whether the Bucket already exists.
+func (s *storage) tryCreateBucket(bucketName []byte, start bool) (bool, error) {
 	var exist bool
 	err := s.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucket)
+		b := tx.Bucket(bucketName)
 		if b == nil {
 			// Bucket not exist, create a new Bucket
 			exist = false
-			b, err := tx.CreateBucketIfNotExists(bucket)
+			b, err := tx.CreateBucketIfNotExists(bucketName)
 			if err != nil {
-				return fmt.Errorf("create bucket %s failed: %s", bucket, err)
+				return fmt.Errorf("create bucketName %s failed: %s", bucketName, err)
 			}
 			if start {
 				err = b.SetSequence(StartAt)

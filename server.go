@@ -2,6 +2,7 @@ package tinyurl
 
 import (
 	"errors"
+	"github.com/wingsxdu/tinyurl/lru"
 
 	"github.com/wingsxdu/tinyurl/base36"
 	"github.com/wingsxdu/tinyurl/storage"
@@ -16,19 +17,31 @@ var (
 
 // Don't use init()
 
+var LRU *lru.LRUCache
+
 // New() will init a Storage interface
 // if New() return a error, the program could not run, so we should panic
 func New() error {
 	c := storage.DefaultConfig()
 	var err error
 	s, err = storage.New(c)
+	LRU = lru.New(1000)
 	return err
 }
 
 // Get() will get a url by tinyUrl
 func Get(tinyUrl string) ([]byte, error) {
 	index := base36.Decode(tinyUrl)
-	return s.View([]byte("index"), util.Utob(index))
+	if v := LRU.Get(index); v != nil {
+		return v, nil
+	} else {
+		v, err := s.View([]byte("index"), util.Utob(index))
+		if err != nil {
+			return nil, err
+		}
+		LRU.Put(index, v)
+		return v, err
+	}
 }
 
 // Create() will create a tinyUrl
@@ -52,6 +65,7 @@ func Update(tinyUrl, newUrl string) error {
 	} else if oldUrl == nil {
 		return ErrTinyUrlNotExist
 	}
+	LRU.Put(index, []byte(newUrl))
 	return s.Update([]byte("index"), util.Utob(index), []byte(newUrl))
 }
 
@@ -59,5 +73,6 @@ func Update(tinyUrl, newUrl string) error {
 func Delete(tinyUrl string) error {
 	index := base36.Decode(tinyUrl)
 	// if err != nil, the delete function is successful
+	LRU.Delete(index)
 	return s.Delete([]byte("index"), util.Utob(index))
 }
